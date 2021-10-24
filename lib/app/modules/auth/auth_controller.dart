@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:keepital/app/data/models/keepital_user.dart';
 import 'package:keepital/app/data/providers/user_provider.dart';
+import 'package:keepital/app/data/providers/wallet_provider.dart';
 import 'package:keepital/app/data/services/auth_service.dart';
+import 'package:keepital/app/data/services/data_service.dart';
 import 'package:keepital/app/enums/app_enums.dart';
 import 'package:keepital/app/routes/pages.dart';
 
@@ -34,13 +36,13 @@ class AuthController extends GetxController {
   }
 
   Future<void> _onSignInSuccess(UserCredential result) async {
-    bool isExist = _isUserExists(result.user!.uid);
+    bool isExist = await _isUserExists(result.user!.uid);
     if (isExist) {
-      await _onLoadData();
+      await DataService.instance.loadUserData();
     } else {
       _createUser(result.user);
     }
-    _navigateToHome();
+    _navigateToSuitableScreen();
   }
 
   _startLoading() => isLoading.value = true;
@@ -51,16 +53,16 @@ class AuthController extends GetxController {
     //
   }
 
-  _onLoadData() async {
-    await Future.delayed(Duration(seconds: 2));
-  }
-
   _createUser(User? user) async {
     KeepitalUser keepitalUser = KeepitalUser(user!.uid, amount: 0, currencyId: '0', name: user.displayName);
     _userProvider.add(keepitalUser);
   }
 
-  _navigateToHome() {
-    Get.offAllNamed(Routes.home);
+  _navigateToSuitableScreen() {
+    if (DataService.currentUser!.hasAnyWallet) {
+      Get.offAllNamed(Routes.home);
+    } else {
+      Get.offAllNamed(Routes.firstWallet);
+    }
   }
 }
